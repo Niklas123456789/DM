@@ -1,0 +1,16 @@
+name: /home/kettu/Development/Projects/uni/dm/group_assignment/.conda_env
+channels:
+  - defaults
+  - pytorch
+dependencies:
+  - notebook
+  - numpy
+  - scikit-learn
+  - scipy
+  - pycodestyle
+  - pytorch==1.6.0
+  - torchvision==0.7.0
+  - cpuonly
+  - torchaudio
+prefix: /home/kettu/Development/Projects/uni/dm/group_assignment/.conda_env
+
