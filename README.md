@@ -52,7 +52,7 @@ __Create/Update environment file__
 
 For better cross platform compatibility backup history only:
 
-    conda env export --prefix .conda_env --from-history > environment.yml
+    conda env export --prefix .conda_env --from-history > environment_history.yml
 
 __Note:__ If inside the environment `--prefix .conda_env` can be omitted.
 
