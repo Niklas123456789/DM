@@ -20,7 +20,7 @@ _for better cross platform compatibility install dependencies from history only_
 
 __Update env from environment file__
 
-    conda env update --prefix .conda_env --file environment.yml --prune
+    conda env update --prefix .conda_env --file environment_history.yml --prune
 
 __Activate env__
 
