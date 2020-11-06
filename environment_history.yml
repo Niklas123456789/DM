@@ -1,7 +1,7 @@
 name: /home/kettu/Development/Projects/uni/dm/group_assignment/.conda_env
 channels:
-  - defaults
   - pytorch
+  - defaults
 dependencies:
   - notebook
   - numpy
@@ -12,5 +12,14 @@ dependencies:
   - torchvision==0.7.0
   - cpuonly
   - torchaudio
+  - matplotlib
+  - pandas
+  - networkx
+  - pip:
+    - torch-cluster==1.5.7
+    - torch-geometric==1.6.1
+    - torch-scatter==2.0.5
+    - torch-sparse==0.6.7
+    - torch-spline-conv==1.2.0
 prefix: /home/kettu/Development/Projects/uni/dm/group_assignment/.conda_env
 
