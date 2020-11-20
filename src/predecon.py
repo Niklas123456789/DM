@@ -163,12 +163,14 @@ class PreDeCon():
 
         p : numpy.ndarray
         """
-        pdim = self._subspace_preference_dimensionality(p)
-        in_neighborhood = p in self._pref_neighborhood_of_point(q)
-
-        print(in_neighborhood)
-        print(p, self._pref_neighborhood_of_point(q))
-        return self._is_core_point(q) and pdim <= self.lambda_ and in_neighborhood
+        for pt in self._pref_neighborhood_of_point(q):
+            # if the point is in the neighborhood (condition 3), check if condition 1 and 2 are fulfilled
+            if np.array_equal(p,pt):
+                return self._is_core_point(q) \
+                       and self._subspace_preference_dimensionality(p) <= self.lambda_
+        
+        # the point cannot be reachable since condition 3 was not fulfilled, therefore return False
+        return False
 
 if __name__ == "__main__":
     X = np.array([
@@ -185,15 +187,15 @@ if __name__ == "__main__":
         [6, 1],
         [6, 0]
     ])
-    print(X.shape)
+    print(X, '\n', X.shape)
 
     predecon = PreDeCon()
     predecon.fit(X)
 
-    p2 = np.array([1, 3])
-    p3 = np.array([2, 3])
-    p6 = np.array([5, 3])
-    p9 = np.array([6, 3])
+    p2 = X[1]
+    p3 = X[2]
+    p6 = X[5]
+    p9 = X[8]
 
     N_p3 = predecon._neighborhood_of_point(p3)
     print("p3:   ", p3)
