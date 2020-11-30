@@ -57,8 +57,14 @@ class PreDeCon():
 
         for point in self.X:
             if self._is_core_point(point):
-                clusterID += 1
+                # ensures IDs that only increase by 1
+                try:
+                    self._cluster_of_points[point.tobytes()]
+                except KeyError:
+                    clusterID += 1
+
                 queue = Queue()
+
                 for n in self._pref_neighborhood_of_point(point):
                     queue.put(n)
 
@@ -78,6 +84,12 @@ class PreDeCon():
 
             else: # point is noise
                 self._cluster_of_points[point.tobytes()] = self._NOISE
+        
+        self.labels = []
+        for point in self.X:
+            self.labels.append(self._cluster_of_points[point.tobytes()])
+        
+        # self._cluster_of_points = None
 
     def _neighborhood_of_point(self, p):
         """
@@ -275,11 +287,19 @@ if __name__ == "__main__":
     print("Is p6 directly preference weighted reachable from p3?", predecon._is_directly_preference_weighted_reachable(p3,p6))
 
     print("\nClusterIDs of data-points: \n", predecon._cluster_of_points)
+    print("\nClusterIDs of data-points:", predecon.labels)
     print("ID of p3:", predecon._cluster_of_points[p3.tobytes()])
+    print("ID of p3:", predecon.labels[2])
     print("p3 is noise: ", predecon._is_noise_point(p3))
     print("ID of p6:", predecon._cluster_of_points[p6.tobytes()])
+    print("ID of p6:", predecon.labels[5])
     print("p6 is noise: ", predecon._is_noise_point(p6))
 
     # predecon._is_noise_point(np.array([7,0])) raises KeyError
 
-    # TODO - test plotting?
+    import matplotlib
+    from matplotlib import pyplot as plt
+    fig = plt.figure()
+    ax = fig.add_axes([0,0,1,1])
+    ax.scatter(x=X[:,0],y=X[:,1],c=predecon.labels)
+    plt.show()
