@@ -6,7 +6,7 @@ import numpy as np
 
 
 def kernelPCA(dataset):
-    kpca = KernelPCA(n_components=100, kernel="precomputed")
+    kpca = KernelPCA(n_components=2, kernel="precomputed")
     reduced_kpca = kpca.fit_transform(dataset)
     return reduced_kpca
 
