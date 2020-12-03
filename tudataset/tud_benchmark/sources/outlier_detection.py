@@ -59,7 +59,7 @@ def detect_outlier(data):
     return outliers, lower_bound, upper_bound
 
 
-def dataWithoutOutliersWithRange(testDataset, minX, maxX, minY, maxY):
+def seperateOutliersWithRange(testDataset, minX, maxX, minY, maxY, returnOutliers):
     outlierIndex = [0] * len(testDataset)
 
     for i in range(len(testDataset)):
@@ -71,9 +71,15 @@ def dataWithoutOutliersWithRange(testDataset, minX, maxX, minY, maxY):
                 if testDataset[i][1] <= minY or testDataset[i][1] >= maxY:
                     outlierIndex[i] = 1
 
-    return removeOutliers(dataset=testDataset, outliers=outlierIndex)
+    if returnOutliers:
+        data = removeData(dataset=testDataset, outliers=outlierIndex)
+        return data, outlierIndex
+    else:
+        data = removeOutliers(dataset=testDataset, outliers=outlierIndex)
+        return data, outlierIndex
 
-def dataWithoutOutliers(testDataset):
+
+def seperateOutliers(testDataset, returnOutliers):
     outlier0, lower_bound0, upper_bound0 = detect_outlier(testDataset[0])
     outlier1, lower_bound1, upper_bound1 = detect_outlier(testDataset[1])
     outlierIndex = [0] * len(testDataset)
@@ -90,17 +96,25 @@ def dataWithoutOutliers(testDataset):
             if testDataset[index][j] <= lower_bound * 2 or testDataset[index][j] >= upper_bound * 2:
                 outlierIndex[index] = 1
 
-    return removeOutliers(testDataset, outlierIndex)
+    if returnOutliers:
+        data = removeData(dataset=testDataset, outliers=outlierIndex)
+        return data, outlierIndex
+    else:
+        data = removeOutliers(dataset=testDataset, outliers=outlierIndex)
+        return data, outlierIndex
+
+def printOutlierCount(outliers):
+    elements_count = collections.Counter(outliers)
+    # printing the element and the frequency
+    for key, value in elements_count.items():
+        print()
+        if key == 0:
+            print(f"Number of datapoints without outliers:  {value}")
+        else:
+            print(f"Number of outliers:                     {value}")
 
 
 def removeOutliers(dataset, outliers):
-    elements_count = collections.Counter(outliers)
-    # printing the element and the frequency
-    print("Outliers are ones")
-    print()
-    for key, value in elements_count.items():
-        print(f"{key}: {value}")
-
     # data without outliers
     testDataWitoutOuliers = np.where(outliers == 1, None, dataset)
     for i in range(len(testDataWitoutOuliers)):
@@ -108,4 +122,12 @@ def removeOutliers(dataset, outliers):
             testDataWitoutOuliers[i] = None
     return testDataWitoutOuliers
 
+
+def removeData(dataset, outliers):
+    # data only outliers
+    testDataOnlyOuliers = np.where(outliers == 0, None, dataset)
+    for i in range(len(testDataOnlyOuliers)):
+        if outliers[i] == 0:
+            testDataOnlyOuliers[i] = None
+    return testDataOnlyOuliers
 

@@ -26,7 +26,7 @@ def getDensity(G):
 
 
 def getNumberOfIsomorphicGraphs(G):
-    return len([pair for pair in combinations(G,2) if nx.is_isomorphic(pair[0],pair[1])])
+    return len([pair for pair in combinations(G,2) if nx.faster_could_be_isomorphic(pair[0],pair[1])])
 
 
 def getGraphDataByClass(graphs,movie_topic):
@@ -34,7 +34,7 @@ def getGraphDataByClass(graphs,movie_topic):
     avg_number_nodes = getAverageNumberOfNodes(graphs)
     avg_density = getDensity(graphs)
     avg_number_edges_per_node = getAverageNumberOfEdgesPerNode(graphs)
-    print(movie_topic+': ')
+    print('\033[1m' + movie_topic+': ' + '\033[0m')
     print('Average number of edges: ',avg_number_edges)
     print('Average number of nodes: ',avg_number_nodes)
     print('Average number of edges per nodes: ',avg_number_edges_per_node)
