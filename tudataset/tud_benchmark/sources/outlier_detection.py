@@ -103,11 +103,13 @@ def seperateOutliers(testDataset, returnOutliers):
         data = removeOutliers(dataset=testDataset, outliers=outlierIndex)
         return data, outlierIndex
 
-def printOutlierCount(outliers):
+def printOutlierCount(outliers, title):
     elements_count = collections.Counter(outliers)
     # printing the element and the frequency
+    print()
+    print('\033[1m' + title +': ' + '\033[0m')
     for key, value in elements_count.items():
-        print()
+
         if key == 0:
             print(f"Number of datapoints without outliers:  {value}")
         else:
