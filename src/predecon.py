@@ -126,7 +126,7 @@ class PreDeCon():
             j : int - Specifies the attribute (i.e. the column) whichs variance will be computed.
         """
         N = self._neighborhood_of_point(p)
-        sum = np.sum([np.abs(p[j] - q[j]) for q in N])
+        sum = np.sum(np.abs(N[:, j] - p[j]))
         return sum / len(N)
 
     def _subspace_preference_vector(self, p):
@@ -209,11 +209,9 @@ class PreDeCon():
             q : numpy.ndarray
             p : numpy.ndarray
         """
-        for pt in self._pref_neighborhood_of_point(q):
+        if (self._pref_neighborhood_of_point(q) == p).any():
             # if the point is in the neighborhood (condition 3), check if condition 1 and 2 are fulfilled
-            if np.array_equal(p,pt):
-                return self._is_core_point(q) \
-                       and self._subspace_preference_dimensionality(p) <= self.lambda_
+            return self._is_core_point(q) and self._subspace_preference_dimensionality(p) <= self.lambda_
 
         # the point cannot be directly reachable since condition 3 was not fulfilled, therefore return False
         return False
