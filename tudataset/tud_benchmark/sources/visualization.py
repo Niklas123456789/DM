@@ -2,24 +2,28 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 import pandas as pd
 import networkx as nx
+import numpy as np
 
 
 
 def scatterPlot2DBig(data, title, classes):
     fig = plt.figure(figsize=(15, 15))
+    colormap = np.array(["g", "b"])
+
     if classes is not None:
-        plt.scatter(data[:, 0], data[:, 1], c=classes)
+        plt.scatter(data[:, 0], data[:, 1], c=colormap[classes])
     else:
         plt.scatter(data[:, 0], data[:, 1])
     plt.title(title,fontsize=18)
     plt.show()
 
 def scatterPlot2DMiddle(data, title, classes):
-    fig = plt.figure(figsize=(15, 15))
+    fig = plt.figure(figsize=(8,8))
+    colormap = np.array(["g", "b"])
     if classes is not None:
-        plt.scatter(data[:, 0], data[:, 1], c=classes, s=0.2)
+        plt.scatter(data[:, 0], data[:, 1], c=colormap[classes], s=0.2)
     else:
-        plt.scatter(data[:, 0], data[:, 1], s=0.2)
+        plt.scatter(data[:, 0], data[:, 1], s=1)
     plt.title(title,fontsize=18)
     plt.show()
 
