@@ -101,7 +101,7 @@ class PreDeCon():
         # return cached neighborhood for points in X, calculate for unknown points
         try:
             return self._neighborhoods[p.tobytes()]
-        except IndexError:
+        except KeyError:
             return self._eps_neighborhood(p)
 
     def _pref_neighborhood_of_point(self, p):
@@ -114,7 +114,7 @@ class PreDeCon():
         # return cached neighborhood for points in X, calculate for unknown points
         try:
             return self._pref_weighted_neighborhoods[p.tobytes()]
-        except IndexError:
+        except KeyError:
             self._preference_weighted_eps_neighborhood(p)
 
     def _variance_along_attribute(self, p, j):
@@ -138,7 +138,7 @@ class PreDeCon():
         """
         var = self._variance_along_attribute
         d = self.num_features
-        w = [(1 if var(p,j) > self.delta else self.kappa) for j in range(d)],
+        w = [(1 if var(p,j) > self.delta else self.kappa) for j in range(d)]
         return np.array(w)
 
     def _subspace_preference_dimensionality(self, p):
