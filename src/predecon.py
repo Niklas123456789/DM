@@ -26,6 +26,7 @@ class PreDeCon():
         self._neighborhoods = None
         self._pref_weighted_neighborhoods = None
         self._cluster_of_points = None
+        self._directly_reachable = {}
 
         self._NOISE = -1 # cluster ID for all noise points
 
@@ -199,10 +200,15 @@ class PreDeCon():
             q : int
             p : int
         """
-        # this order of condition checking was the fastest
-        return p in self._pref_weighted_neighborhoods[q] \
+        try:
+            return self._directly_reachable[(q, p)]
+        except KeyError:
+            # this order of condition checking was the fastest
+            reachable = (p == self._pref_weighted_neighborhoods[q]).any() \
                 and self._is_core_point(q) \
                 and self._subspace_preference_dimensionality(p) <= self.lambda_
+            self._directly_reachable[(q, p)] = reachable
+            return reachable
     
     def performance(self):
         """Returns performance statistics for selected instance methods."""
