@@ -26,6 +26,7 @@ class PreDeCon():
         self._neighborhoods = None
         self._pref_weighted_neighborhoods = None
         self._cluster_of_points = None
+        self._similarity_measures = None
         self._directly_reachable = {}
 
         self._NOISE = -1 # cluster ID for all noise points
@@ -52,6 +53,7 @@ class PreDeCon():
         self._neighborhoods = neighborhoods
 
         self._subspace_preference_matrix()
+        self._compute_similarity_matrix()
 
         pref_weighted_neighborhoods = {}
         for p in range(self.num_points):
@@ -131,28 +133,28 @@ class PreDeCon():
         """
         return np.count_nonzero(self._subspace_preference_matrix[p] == self.kappa)
 
-    @timed('_performance', 'pwsm')
-    def _preference_weighted_similarity_measure(self, p, q):
+    @timed('_performance', 'csm')
+    def _compute_similarity_matrix(self):
         """
-        Computes a distance between data-points self.X[p] and self.X[q] based on self.X[p]'s subspace preference vector (see Definition 3 of the PreDeCon_Paper.pdf).
+        Computes the maximum distance between data-points self.X[p] and self.X[q] (see Definition 4 of the PreDeCon_Paper.pdf).
+        """
+        similarity = np.zeros((self.num_points, self.num_points))
+        for p in range(self.num_points):
+            w = self._subspace_preference_matrix[p]
+            similarity[p] = np.sqrt(np.sum(w * np.square(self.X - self.X[p]) , axis=1))
 
-        args:
-            p : int
-            q : int
-        """
-        return np.sqrt(np.sum(self._subspace_preference_matrix[p] * (self.X[p]-self.X[q])**2))
+        self._similarity_measures = np.maximum(similarity, similarity.T)
 
     @timed('_performance', 'gpwsm')
     def _general_preference_weighted_similarity_measure(self, p, q):
         """
-        Determines the maximum distance between data-points self.X[p] and self.X[q] (see Definition 4 of the PreDeCon_Paper.pdf).
+        Returns the maximum distance between data-points self.X[p] and self.X[q] (see Definition 4 of the PreDeCon_Paper.pdf).
 
         args:
             p : int
             q : int
         """
-        dist = self._preference_weighted_similarity_measure
-        return np.maximum(dist(p,q), dist(q,p))
+        return self._similarity_measures[p, q]
 
     @timed('_performance', 'en')
     def _eps_neighborhood(self, p):
