@@ -120,10 +120,9 @@ class PreDeCon():
         similarity = np.zeros((self.num_points, self.num_points))
         for p in range(self.num_points):
             w = self._subspace_preference_matrix[p]
-            similarity[p] = np.sqrt(np.sum(w * (self.X - self.X[p])**2 , axis=1))
+            similarity[p] = np.sqrt(np.sum(w * (self.X - self.X[p])**2, axis=1))
 
         self._similarity = np.maximum(similarity, similarity.T)
-        print(self._similarity)
 
     @timed('_performance', 'en')
     def _eps_neighborhood(self, p):
@@ -136,7 +135,7 @@ class PreDeCon():
         args:
             p : int
         """
-        return np.array([q for q in range(self.num_points) if np.linalg.norm(self.X[p]-self.X[q]) <= self.eps])
+        return np.flatnonzero(np.linalg.norm(self.X - self.X[p], axis=1) <= self.eps)
 
     @timed('_performance', 'pwen')
     def _preference_weighted_eps_neighborhood(self, o):
@@ -150,7 +149,7 @@ class PreDeCon():
         args:
             o : int
         """
-        return np.array([x for x in range(self.num_points) if self._similarity[o,x] <= self.eps])
+        return np.flatnonzero(self._similarity[o, :] <= self.eps)
 
     @timed('_performance', 'icp')
     def _is_core_point(self, p):
