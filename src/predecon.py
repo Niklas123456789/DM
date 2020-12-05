@@ -26,6 +26,7 @@ class PreDeCon():
         self._neighborhoods = None
         self._pref_weighted_neighborhoods = None
         self._cluster_of_points = None
+        self._subspace_preference_matrix = None
         self._similarity_measures = None
         self._directly_reachable = {}
 
@@ -45,83 +46,50 @@ class PreDeCon():
         self.num_features = X.shape[1]
         self.X = X
 
-        # caching neighborhoods in dicts
+        self._compute_neighborhoods()
+        self._compute_subspace_preference_matrix()
+        self._compute_similarity_matrix()
+        self._compute_weighted_neighborhoods()
+        self._compute_clusters()
+        
+        self.labels = []
+        for i in range(self.num_points):
+            self.labels.append(self._cluster_of_points[i])
+
+    @timed('_performance', 'cn')
+    def _compute_neighborhoods(self):
         neighborhoods = {}
         for p in range(self.num_points):
             N = self._eps_neighborhood(p)
             neighborhoods[p] = N
         self._neighborhoods = neighborhoods
-
-        self._subspace_preference_matrix()
-        self._compute_similarity_matrix()
-
+    
+    @timed('_performance', 'cwn')
+    def _compute_weighted_neighborhoods(self):
         pref_weighted_neighborhoods = {}
         for p in range(self.num_points):
             N_w = self._preference_weighted_eps_neighborhood(p)
             pref_weighted_neighborhoods[p] = N_w
         self._pref_weighted_neighborhoods = pref_weighted_neighborhoods
-
-    	# see Figure 4 of the PreDeCon_Paper.pdf for the Pseudocode
-        self._cluster_of_points = {}
-        clusterID = 0
-
-        for i in range(self.num_points):
-            if self._is_core_point(i):
-                # ensures IDs that only increase by 1
-                try:
-                    self._cluster_of_points[i]
-                except KeyError:
-                    clusterID += 1
-
-                queue = Queue()
-
-                for n in self._pref_weighted_neighborhoods[i]:
-                    queue.put(n)
-
-                while not queue.empty():
-                    q = queue.get()
-                    R = [x for x in range(self.num_points) if self._is_directly_preference_weighted_reachable(q,x)]
-
-                    for x in R:
-                        try:
-                            if self._cluster_of_points[x] == self._NOISE:
-                                self._cluster_of_points[x] = clusterID
-
-                        # if a KeyError occured, x was unclassified
-                        except KeyError:
-                            self._cluster_of_points[x] = clusterID
-                            queue.put(x)
-
-            else: # point is noise
-                self._cluster_of_points[i] = self._NOISE
-        
-        self.labels = []
-        for i in range(self.num_points):
-            self.labels.append(self._cluster_of_points[i])
-        
-        self._cluster_of_points = None
-
-    @timed('_performance', 'vm')
-    def _variance_matrix(self):
+    
+    @timed('_performance', 'spm')
+    def _compute_subspace_preference_matrix(self):
         """
-        Computes the variances where the values in row i correspond to the variances of the attributes 0,...,j of data-point self.X[i] (see Definition 1 of the PreDeCon_Paper.pdf).
+        Constructs the subspace preference matrix where row i corresponds to the subspace preference
+        vector of data-point self.X[i] (see Definition 3 of the PreDeCon_Paper.pdf).
         """
-        vars = np.zeros(self.X.shape)
+
+        # variances where the values in row i correspond to the variances of the attributes 0,...,j
+        # of data-point self.X[i] (see Definition 1 of the PreDeCon_Paper.pdf).
+        variance_matrix = np.zeros(self.X.shape)
         for i in range(self.num_points):
             # https://numpy.org/doc/stable/user/theory.broadcasting.html#example-3
-            vars[i] = np.sum((self.X[self._neighborhoods[i]] - self.X[i])**2,axis=0) / len(self.X[self._neighborhoods[i]])
-        return vars
-
-    @timed('_performance', 'spm')
-    def _subspace_preference_matrix(self):
-        """
-        Constructs the subspace preference matrix where row i corresponds to the subspace preference vector of data-point self.X[i] (see Definition 3 of the PreDeCon_Paper.pdf).
-        """
-        vars = self._variance_matrix()
+            variance_matrix[i] = np.sum((self.X[self._neighborhoods[i]] - self.X[i])**2,axis=0) / len(self.X[self._neighborhoods[i]])
+        
         self._subspace_preference_matrix = np.ones(self.X.shape)
         # where the variance is smaller or equal to delta, set the preference to kappa
         # https://numpy.org/doc/stable/user/basics.indexing.html?highlight=slicing#boolean-or-mask-index-arrays
-        self._subspace_preference_matrix[vars <= self.delta] = self.kappa
+        self._subspace_preference_matrix[variance_matrix <= self.delta] = self.kappa
 
     @timed('_performance', 'spd')
     def _subspace_preference_dimensionality(self, p):
@@ -211,6 +179,44 @@ class PreDeCon():
                 and self._subspace_preference_dimensionality(p) <= self.lambda_
             self._directly_reachable[(q, p)] = reachable
             return reachable
+    
+    @timed('_performance', 'cc')
+    def _compute_clusters(self):
+        # see Figure 4 of the PreDeCon_Paper.pdf for the Pseudocode
+        clusters = {}
+        clusterID = 0
+
+        for i in range(self.num_points):
+            if self._is_core_point(i):
+                # ensures IDs that only increase by 1
+                try:
+                    clusters[i]
+                except KeyError:
+                    clusterID += 1
+
+                queue = Queue()
+
+                for n in self._pref_weighted_neighborhoods[i]:
+                    queue.put(n)
+
+                while not queue.empty():
+                    q = queue.get()
+                    R = [x for x in range(self.num_points) if self._is_directly_preference_weighted_reachable(q,x)]
+
+                    for x in R:
+                        try:
+                            if clusters[x] == self._NOISE:
+                                clusters[x] = clusterID
+
+                        # if a KeyError occured, x was unclassified
+                        except KeyError:
+                            clusters[x] = clusterID
+                            queue.put(x)
+
+            else: # point is noise
+                clusters[i] = self._NOISE
+        
+        self._cluster_of_points = clusters
     
     def performance(self):
         """Returns performance statistics for selected instance methods."""
