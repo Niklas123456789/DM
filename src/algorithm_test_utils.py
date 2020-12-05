@@ -37,10 +37,6 @@ def algo_test(dataset, labelcolumn, minPts, eps, delta, lambda_, kappa, show_per
     predecon = PreDeCon(minPts=minPts, eps=eps, delta=delta, lambda_=lambda_, kappa=kappa)
     predecon.fit(X)
 
-    if show_performance:
-        print("\nDifferent ClusterIDs:", len(set(predecon.labels)))
-        print("\nNMI:", NMI(true_labels,predecon.labels))
-
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
     ax[0].scatter(X[:, 0], X[:, 1], c=true_labels)
     ax[0].set_title("True labels")
@@ -48,8 +44,12 @@ def algo_test(dataset, labelcolumn, minPts, eps, delta, lambda_, kappa, show_per
     ax[1].scatter(X[:,0], X[:,1], c=predecon.labels)
     ax[1].set_title("PreDeCon labels")
 
-    print("\nPerformance:")
-    print(predecon.performance())
+
+    if show_performance:
+        print("\nDifferent ClusterIDs:", len(set(predecon.labels)))
+        print("\nNMI:", NMI(true_labels,predecon.labels))
+        print("\nPerformance:")
+        print(predecon.performance())
 
     # display results of elki
     if show_elki:
