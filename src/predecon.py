@@ -8,9 +8,14 @@ class PreDeCon():
         """
         args:
             minPts : int - The minimum number of points required of a data-point p's epsilon neighborhood so that p is a core point.
+
             eps : float - The maximum distance between a data-point p and any other data-point q in p's epsilon neighborhood.
+
             delta : float - Threshold for the variance of an attribute inside an epsilon neighborhood
-            lambda_ : int - The maximum value of the subspace preference dimensionality of an epsilon neighborhood of a data-point p so that p can still be a preference weighted core point.
+
+            lambda_ : int - The maximum value of the subspace preference dimensionality of an epsilon neighborhood
+                            of a data-point p so that p can still be a preference weighted core point.
+
             kappa : int - The factor which weights low variances of an attribute.
         """
 
@@ -54,6 +59,9 @@ class PreDeCon():
 
     @timed('_performance', 'cn')
     def _compute_neighborhoods(self):
+        '''
+        Computes the epsilon neighborhood for all data-points p in self.X
+        '''
         neighborhoods = {}
         for p in range(self.num_points):
             N = self._eps_neighborhood(p)
@@ -62,6 +70,9 @@ class PreDeCon():
     
     @timed('_performance', 'cwn')
     def _compute_weighted_neighborhoods(self):
+        '''
+        Computes the preference weighted epsilon neighborhood for all data-points p in self.X
+        '''
         pref_weighted_neighborhoods = {}
         for p in range(self.num_points):
             N_w = self._preference_weighted_eps_neighborhood(p)
@@ -100,19 +111,25 @@ class PreDeCon():
     @timed('_performance', 'csm')
     def _compute_similarity_matrix(self):
         """
-        Computes the maximum distance between data-points self.X[p] and self.X[q] (see Definition 4 of the PreDeCon_Paper.pdf).
+        Computes a symmetric matrix where row i corresponds to the maximum distance between self.X[i]
+        and every other data-point in self.X (see Definition 4 of the PreDeCon_Paper.pdf).
+
+        e.g. if the maximum distance between self.X[p] and self.X[q] is 7, then
+        self._similarity[p,q] == self._similarity[q,p] == 7
         """
         similarity = np.zeros((self.num_points, self.num_points))
         for p in range(self.num_points):
             w = self._subspace_preference_matrix[p]
-            similarity[p] = np.sqrt(np.sum(w * np.square(self.X - self.X[p]) , axis=1))
+            similarity[p] = np.sqrt(np.sum(w * (self.X - self.X[p])**2 , axis=1))
 
         self._similarity = np.maximum(similarity, similarity.T)
+        print(self._similarity)
 
     @timed('_performance', 'en')
     def _eps_neighborhood(self, p):
         """
-        Computes an index list for the epsilon neighborhood of a data-point self.X[p] based on this objects eps-value where every entry corresponds to another data-point (i.e. a row in self.X).
+        Computes an index list for the epsilon neighborhood of a data-point self.X[p] based on this objects eps-value
+        where every entry corresponds to another data-point (i.e. a row in self.X).
 
         e.g. for a returned list [1,2,5], the epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
 
@@ -124,7 +141,9 @@ class PreDeCon():
     @timed('_performance', 'pwen')
     def _preference_weighted_eps_neighborhood(self, o):
         """
-        Computes an index list for the preference weighted epsilon neighborhood of a data-point self.X[o] based on this objects eps-value and the general preference weighted similarity measure (see Definition 5 of the PreDeCon_Paper.pdf) where every entry corresponds to another data-point (i.e. a row in self.X).
+        Computes an index list for the preference weighted epsilon neighborhood of a data-point self.X[o] based on this objects eps-value
+        and the general preference weighted similarity measure (see Definition 5 of the PreDeCon_Paper.pdf)
+        where every entry corresponds to another data-point (i.e. a row in self.X).
 
         e.g. for a returned list [1,2,5], the prefernce weighted epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
 
@@ -166,7 +185,9 @@ class PreDeCon():
     
     @timed('_performance', 'cc')
     def _compute_clusters(self):
-        # see Figure 4 of the PreDeCon_Paper.pdf for the Pseudocode
+        '''
+        Computes the clustering for self.X, see Figure 4 of the PreDeCon_Paper.pdf for the Pseudocode.
+        '''
         clusters = {}
         clusterID = 0
 
