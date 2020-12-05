@@ -23,11 +23,7 @@ class PreDeCon():
         self.num_points = 0
         self.num_features = 0
         self.X = None
-        self._neighborhoods = None
-        self._pref_weighted_neighborhoods = None
-        self._cluster_of_points = None
-        self._subspace_preference_matrix = None
-        self._similarity_measures = None
+
         self._directly_reachable = {}
 
         self._NOISE = -1 # cluster ID for all noise points
@@ -72,7 +68,7 @@ class PreDeCon():
             pref_weighted_neighborhoods[p] = N_w
         self._pref_weighted_neighborhoods = pref_weighted_neighborhoods
     
-    @timed('_performance', 'spm')
+    @timed('_performance', 'cspm')
     def _compute_subspace_preference_matrix(self):
         """
         Constructs the subspace preference matrix where row i corresponds to the subspace preference
@@ -111,18 +107,7 @@ class PreDeCon():
             w = self._subspace_preference_matrix[p]
             similarity[p] = np.sqrt(np.sum(w * np.square(self.X - self.X[p]) , axis=1))
 
-        self._similarity_measures = np.maximum(similarity, similarity.T)
-
-    @timed('_performance', 'gpwsm')
-    def _general_preference_weighted_similarity_measure(self, p, q):
-        """
-        Returns the maximum distance between data-points self.X[p] and self.X[q] (see Definition 4 of the PreDeCon_Paper.pdf).
-
-        args:
-            p : int
-            q : int
-        """
-        return self._similarity_measures[p, q]
+        self._similarity = np.maximum(similarity, similarity.T)
 
     @timed('_performance', 'en')
     def _eps_neighborhood(self, p):
@@ -146,8 +131,7 @@ class PreDeCon():
         args:
             o : int
         """
-        dist_pref = self._general_preference_weighted_similarity_measure
-        return np.array([x for x in range(self.num_points) if dist_pref(o,x) <= self.eps])
+        return np.array([x for x in range(self.num_points) if self._similarity[o,x] <= self.eps])
 
     @timed('_performance', 'icp')
     def _is_core_point(self, p):
