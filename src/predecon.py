@@ -123,7 +123,6 @@ class PreDeCon():
             similarity[p] = np.sqrt(np.sum(w * (self.X - self.X[p])**2 , axis=1))
 
         self._similarity = np.maximum(similarity, similarity.T)
-        print(self._similarity)
 
     @timed('_performance', 'en')
     def _eps_neighborhood(self, p):
