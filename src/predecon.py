@@ -29,8 +29,6 @@ class PreDeCon():
         self.num_features = 0
         self.X = None
 
-        self._directly_reachable = {}
-
         self._NOISE = -1 # cluster ID for all noise points
 
         self._performance = defaultdict(int)
@@ -51,6 +49,8 @@ class PreDeCon():
         self._compute_subspace_preference_matrix()
         self._compute_similarity_matrix()
         self._compute_weighted_neighborhoods()
+        self._compute_core_points()
+        self._compute_reachability()
         self._compute_clusters()
         
         self.labels = []
@@ -64,7 +64,10 @@ class PreDeCon():
         '''
         neighborhoods = {}
         for p in range(self.num_points):
-            N = self._eps_neighborhood(p)
+            # Computes an index list for the epsilon neighborhood of a data-point self.X[p] based on this objects eps-value
+            # where every entry corresponds to another data-point (i.e. a row in self.X).
+            # e.g. for a returned list [1,2,5], the epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
+            N = np.flatnonzero(np.linalg.norm(self.X - self.X[p], axis=1) <= self.eps)
             neighborhoods[p] = N
         self._neighborhoods = neighborhoods
     
@@ -75,7 +78,11 @@ class PreDeCon():
         '''
         pref_weighted_neighborhoods = {}
         for p in range(self.num_points):
-            N_w = self._preference_weighted_eps_neighborhood(p)
+            # Computes an index list for the preference weighted epsilon neighborhood of a data-point self.X[o] based on this objects eps-value
+            # and the general preference weighted similarity measure (see Definition 5 of the PreDeCon_Paper.pdf)
+            # where every entry corresponds to another data-point (i.e. a row in self.X).
+            # e.g. for a returned list [1,2,5], the prefernce weighted epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
+            N_w = np.flatnonzero(self._similarity[p, :] <= self.eps)
             pref_weighted_neighborhoods[p] = N_w
         self._pref_weighted_neighborhoods = pref_weighted_neighborhoods
     
@@ -97,16 +104,7 @@ class PreDeCon():
         # where the variance is smaller or equal to delta, set the preference to kappa
         # https://numpy.org/doc/stable/user/basics.indexing.html?highlight=slicing#boolean-or-mask-index-arrays
         self._subspace_preference_matrix[variance_matrix <= self.delta] = self.kappa
-
-    @timed('_performance', 'spd')
-    def _subspace_preference_dimensionality(self, p):
-        """
-        Computes the number of dimensions with low enough variance of a data-point self.X[p] (see Definition 2 of the PreDeCon_Paper.pdf).
-
-        args:
-            p : int
-        """
-        return np.count_nonzero(self._subspace_preference_matrix[p] == self.kappa)
+        self._subspace_preference_dimensionality = np.count_nonzero(self._subspace_preference_matrix == self.kappa, axis=1)
 
     @timed('_performance', 'csm')
     def _compute_similarity_matrix(self):
@@ -124,63 +122,35 @@ class PreDeCon():
 
         self._similarity = np.maximum(similarity, similarity.T)
 
-    @timed('_performance', 'en')
-    def _eps_neighborhood(self, p):
+    @timed('_performance', 'ccp')
+    def _compute_core_points(self):
         """
-        Computes an index list for the epsilon neighborhood of a data-point self.X[p] based on this objects eps-value
-        where every entry corresponds to another data-point (i.e. a row in self.X).
-
-        e.g. for a returned list [1,2,5], the epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
+        Computes if a data-point self.X[p] is a preference weighted core point (see Definition 6 of the PreDeCon_Paper.pdf).
 
         args:
             p : int
         """
-        return np.flatnonzero(np.linalg.norm(self.X - self.X[p], axis=1) <= self.eps)
+        pdim = self._subspace_preference_dimensionality
+        num_N_w = np.array([len(self._pref_weighted_neighborhoods[x]) for x in range(self.num_points)])
+        self._core_points = np.logical_and(pdim <= self.lambda_, num_N_w >= self.minPts)
 
-    @timed('_performance', 'pwen')
-    def _preference_weighted_eps_neighborhood(self, o):
+    @timed('_performance', 'cr')
+    def _compute_reachability(self):
         """
-        Computes an index list for the preference weighted epsilon neighborhood of a data-point self.X[o] based on this objects eps-value
-        and the general preference weighted similarity measure (see Definition 5 of the PreDeCon_Paper.pdf)
-        where every entry corresponds to another data-point (i.e. a row in self.X).
-
-        e.g. for a returned list [1,2,5], the prefernce weighted epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
-
-        args:
-            o : int
-        """
-        return np.flatnonzero(self._similarity[o, :] <= self.eps)
-
-    @timed('_performance', 'icp')
-    def _is_core_point(self, p):
-        """
-        Checks if a data-point self.X[p] is a preference weighted core point (see Definition 6 of the PreDeCon_Paper.pdf).
-
-        args:
-            p : int
-        """
-        pdim = self._subspace_preference_dimensionality(p)
-        N_w = self._pref_weighted_neighborhoods[p]
-        return pdim <= self.lambda_ and len(N_w) >= self.minPts
-
-    @timed('_performance', 'idpwr')
-    def _is_directly_preference_weighted_reachable(self, q, p):
-        """
-        Checks if a data-point self.X[p] is directly preference weighted reachable from a data-point self.X[q] (see Definition 7 of the PreDeCon_Paper.pdf).
+        Computes all data-points p that are directly preference weighted reachable from a data-point q (see Definition 7 of the PreDeCon_Paper.pdf).
 
         args:
             q : int
-            p : int
         """
-        try:
-            return self._directly_reachable[(q, p)]
-        except KeyError:
-            # this order of condition checking was the fastest
-            reachable = (p == self._pref_weighted_neighborhoods[q]).any() \
-                and self._is_core_point(q) \
-                and self._subspace_preference_dimensionality(p) <= self.lambda_
-            self._directly_reachable[(q, p)] = reachable
-            return reachable
+        reachable = {}
+        for q in range(self.num_points):
+            cond1 = self._core_points[q]
+            cond2 = self._subspace_preference_dimensionality <= self.lambda_
+            cond3 = np.zeros((self.num_points,), dtype=bool)
+            cond3[self._pref_weighted_neighborhoods[q]] = True
+
+            reachable[q] = np.flatnonzero(np.logical_and(cond1, np.logical_and(cond2, cond3)))
+        self._directly_reachable_points = reachable
     
     @timed('_performance', 'cc')
     def _compute_clusters(self):
@@ -191,7 +161,7 @@ class PreDeCon():
         clusterID = 0
 
         for i in range(self.num_points):
-            if self._is_core_point(i):
+            if self._core_points[i]:
                 # ensures IDs that only increase by 1
                 try:
                     clusters[i]
@@ -205,7 +175,7 @@ class PreDeCon():
 
                 while not queue.empty():
                     q = queue.get()
-                    R = [x for x in range(self.num_points) if self._is_directly_preference_weighted_reachable(q,x)]
+                    R = self._directly_reachable_points[q]
 
                     for x in R:
                         try:
