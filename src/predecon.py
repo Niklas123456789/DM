@@ -1,4 +1,6 @@
 import numpy as np
+from timing import timed
+from collections import defaultdict
 from queue import Queue
 
 class PreDeCon():
@@ -27,6 +29,9 @@ class PreDeCon():
 
         self._NOISE = -1 # cluster ID for all noise points
 
+        self._performance = defaultdict(int)
+
+    @timed('_performance', 'fit')
     def fit(self, X):
         """
         Apply the PreDeCon algorithm on X.
@@ -93,6 +98,7 @@ class PreDeCon():
         
         self._cluster_of_points = None
 
+    @timed('_performance', 'vm')
     def _variance_matrix(self):
         """
         Computes the variances where the values in row i correspond to the variances of the attributes 0,...,j of data-point self.X[i] (see Definition 1 of the PreDeCon_Paper.pdf).
@@ -103,6 +109,7 @@ class PreDeCon():
             vars[i] = np.sum(np.abs(self.X[self._neighborhoods[i]] - self.X[i]),axis=0) / len(self.X[self._neighborhoods[i]])
         return vars
 
+    @timed('_performance', 'spm')
     def _subspace_preference_matrix(self):
         """
         Constructs the subspace preference matrix where row i corresponds to the subspace preference vector of data-point self.X[i] (see Definition 3 of the PreDeCon_Paper.pdf).
@@ -113,6 +120,7 @@ class PreDeCon():
         # https://numpy.org/doc/stable/user/basics.indexing.html?highlight=slicing#boolean-or-mask-index-arrays
         self._subspace_preference_matrix[vars <= self.delta] = self.kappa
 
+    @timed('_performance', 'spd')
     def _subspace_preference_dimensionality(self, p):
         """
         Computes the number of dimensions with low enough variance of a data-point self.X[p] (see Definition 2 of the PreDeCon_Paper.pdf).
@@ -122,6 +130,7 @@ class PreDeCon():
         """
         return np.count_nonzero(self._subspace_preference_matrix[p] == self.kappa)
 
+    @timed('_performance', 'pwsm')
     def _preference_weighted_similarity_measure(self, p, q):
         """
         Computes a distance between data-points self.X[p] and self.X[q] based on self.X[p]'s subspace preference vector (see Definition 3 of the PreDeCon_Paper.pdf).
@@ -132,6 +141,7 @@ class PreDeCon():
         """
         return np.sqrt(np.sum(self._subspace_preference_matrix[p] * (self.X[p]-self.X[q])**2))
 
+    @timed('_performance', 'gpwsm')
     def _general_preference_weighted_similarity_measure(self, p, q):
         """
         Determines the maximum distance between data-points self.X[p] and self.X[q] (see Definition 4 of the PreDeCon_Paper.pdf).
@@ -143,6 +153,7 @@ class PreDeCon():
         dist = self._preference_weighted_similarity_measure
         return np.maximum(dist(p,q), dist(q,p))
 
+    @timed('_performance', 'en')
     def _eps_neighborhood(self, p):
         """
         Computes an index list for the epsilon neighborhood of a data-point self.X[p] based on this objects eps-value where every entry corresponds to another data-point (i.e. a row in self.X).
@@ -154,6 +165,7 @@ class PreDeCon():
         """
         return np.array([q for q in range(self.num_points) if np.linalg.norm(self.X[p]-self.X[q]) <= self.eps])
 
+    @timed('_performance', 'pwen')
     def _preference_weighted_eps_neighborhood(self, o):
         """
         Computes an index list for the preference weighted epsilon neighborhood of a data-point self.X[o] based on this objects eps-value and the general preference weighted similarity measure (see Definition 5 of the PreDeCon_Paper.pdf) where every entry corresponds to another data-point (i.e. a row in self.X).
@@ -166,6 +178,7 @@ class PreDeCon():
         dist_pref = self._general_preference_weighted_similarity_measure
         return np.array([x for x in range(self.num_points) if dist_pref(o,x) <= self.eps])
 
+    @timed('_performance', 'icp')
     def _is_core_point(self, p):
         """
         Checks if a data-point self.X[p] is a preference weighted core point (see Definition 6 of the PreDeCon_Paper.pdf).
@@ -177,6 +190,7 @@ class PreDeCon():
         N_w = self._pref_weighted_neighborhoods[p]
         return pdim <= self.lambda_ and len(N_w) >= self.minPts
 
+    @timed('_performance', 'idpwr')
     def _is_directly_preference_weighted_reachable(self, q, p):
         """
         Checks if a data-point self.X[p] is directly preference weighted reachable from a data-point self.X[q] (see Definition 7 of the PreDeCon_Paper.pdf).
@@ -189,3 +203,10 @@ class PreDeCon():
         return p in self._pref_weighted_neighborhoods[q] \
                 and self._is_core_point(q) \
                 and self._subspace_preference_dimensionality(p) <= self.lambda_
+    
+    def performance(self):
+        """Returns performance statistics for selected instance methods."""
+        perf = ""
+        for key, value in self._performance.items():
+            perf += f"{value / 1000_000_000:>8.4f}s {key}\n"
+        return perf
