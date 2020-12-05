@@ -152,7 +152,7 @@ class PreDeCon():
         args:
             p : int
         """
-        return np.array([np.where(self.X == q)[0][0] for q in self.X if np.linalg.norm(self.X[p]-q) <= self.eps])
+        return np.array([q for q in range(self.num_points) if np.linalg.norm(self.X[p]-self.X[q]) <= self.eps])
 
     def _preference_weighted_eps_neighborhood(self, o):
         """
