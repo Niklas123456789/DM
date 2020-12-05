@@ -40,190 +40,152 @@ class PreDeCon():
 
         # caching neighborhoods in dicts
         neighborhoods = {}
-        for p in self.X:
+        for p in range(self.num_points):
             N = self._eps_neighborhood(p)
-            neighborhoods[p.tobytes()] = N
+            neighborhoods[p] = N
         self._neighborhoods = neighborhoods
 
+        self._subspace_preference_matrix()
+
         pref_weighted_neighborhoods = {}
-        for p in self.X:
+        for p in range(self.num_points):
             N_w = self._preference_weighted_eps_neighborhood(p)
-            pref_weighted_neighborhoods[p.tobytes()] = N_w
+            pref_weighted_neighborhoods[p] = N_w
         self._pref_weighted_neighborhoods = pref_weighted_neighborhoods
 
     	# see Figure 4 of the PreDeCon_Paper.pdf for the Pseudocode
         self._cluster_of_points = {}
         clusterID = 0
 
-        for point in self.X:
-            if self._is_core_point(point):
+        for i in range(self.num_points):
+            if self._is_core_point(i):
                 # ensures IDs that only increase by 1
                 try:
-                    self._cluster_of_points[point.tobytes()]
+                    self._cluster_of_points[i]
                 except KeyError:
                     clusterID += 1
 
                 queue = Queue()
 
-                for n in self._pref_neighborhood_of_point(point):
+                for n in self._pref_weighted_neighborhoods[i]:
                     queue.put(n)
 
                 while not queue.empty():
                     q = queue.get()
-                    R = [x for x in self.X if self._is_directly_preference_weighted_reachable(q,x)]
+                    R = [x for x in range(self.num_points) if self._is_directly_preference_weighted_reachable(q,x)]
 
                     for x in R:
                         try:
-                            if self._cluster_of_points[x.tobytes()] == self._NOISE:
-                                self._cluster_of_points[x.tobytes()] = clusterID
+                            if self._cluster_of_points[x] == self._NOISE:
+                                self._cluster_of_points[x] = clusterID
 
                         # if a KeyError occured, x was unclassified
                         except KeyError:
-                            self._cluster_of_points[x.tobytes()] = clusterID
+                            self._cluster_of_points[x] = clusterID
                             queue.put(x)
 
             else: # point is noise
-                self._cluster_of_points[point.tobytes()] = self._NOISE
+                self._cluster_of_points[i] = self._NOISE
         
         self.labels = []
-        for point in self.X:
-            self.labels.append(self._cluster_of_points[point.tobytes()])
+        for i in range(self.num_points):
+            self.labels.append(self._cluster_of_points[i])
         
-        # self._cluster_of_points = None
+        self._cluster_of_points = None
 
-    def _neighborhood_of_point(self, p):
+    def _variance_matrix(self):
         """
-        Convenience method, either computes the epsilon neighborhood of a data-point p if it is not already stored in the PreDeCon object or returns the stored neighborhood.
+        Computes the variances where the values in row i correspond to the variances of the attributes 0,...,j of data-point self.X[i] (see Definition 1 of the PreDeCon_Paper.pdf).
+        """
+        vars = np.zeros(self.X.shape)
+        for i in range(self.num_points):
+            # https://numpy.org/doc/stable/user/theory.broadcasting.html#example-3
+            vars[i] = np.sum(np.abs(self.X[self._neighborhoods[i]] - self.X[i]),axis=0) / len(self.X[self._neighborhoods[i]])
+        return vars
 
-        args:
-            p : numpy.ndarray
+    def _subspace_preference_matrix(self):
         """
-        # return cached neighborhood for points in X, calculate for unknown points
-        try:
-            return self._neighborhoods[p.tobytes()]
-        except KeyError:
-            return self._eps_neighborhood(p)
-
-    def _pref_neighborhood_of_point(self, p):
+        Constructs the subspace preference matrix where row i corresponds to the subspace preference vector of data-point self.X[i] (see Definition 3 of the PreDeCon_Paper.pdf).
         """
-        Convenience method, either computes the preference weighted epsilon neighborhood of a data-point p if it is not already stored in the PreDeCon object or returns the stored neighborhood.
-
-        args:
-            p : numpy.ndarray
-        """
-        # return cached neighborhood for points in X, calculate for unknown points
-        try:
-            return self._pref_weighted_neighborhoods[p.tobytes()]
-        except KeyError:
-            self._preference_weighted_eps_neighborhood(p)
-
-    def _variance_along_attribute(self, p, j):
-        """
-        Computes the variance along an attribute j inside the epsilon neighborhood of a data-point p (see Definition 1 of the PreDeCon_Paper.pdf).
-
-        args:
-            p : numpy.ndarray
-            j : int - Specifies the attribute (i.e. the column) whichs variance will be computed.
-        """
-        N = self._neighborhood_of_point(p)
-        sum = np.sum(np.abs(N[:, j] - p[j]))
-        return sum / len(N)
-
-    def _subspace_preference_vector(self, p):
-        """
-        Constructs the subspace preference vector pf a data-point p (see Definition 3 of the PreDeCon_Paper.pdf).
-
-        args:
-            p : numpy.ndarray
-        """
-        var = self._variance_along_attribute
-        d = self.num_features
-        w = [(1 if var(p,j) > self.delta else self.kappa) for j in range(d)]
-        return np.array(w)
+        vars = self._variance_matrix()
+        self._subspace_preference_matrix = np.ones(self.X.shape)
+        # where the variance is smaller or equal to delta, set the preference to kappa
+        # https://numpy.org/doc/stable/user/basics.indexing.html?highlight=slicing#boolean-or-mask-index-arrays
+        self._subspace_preference_matrix[vars <= self.delta] = self.kappa
 
     def _subspace_preference_dimensionality(self, p):
         """
-        Computes the number of dimensions with low enough variance of a data-point p (see Definition 2 of the PreDeCon_Paper.pdf).
+        Computes the number of dimensions with low enough variance of a data-point self.X[p] (see Definition 2 of the PreDeCon_Paper.pdf).
 
         args:
-            p : numpy.ndarray
+            p : int
         """
-        return np.count_nonzero(self._subspace_preference_vector(p) == self.kappa)
+        return np.count_nonzero(self._subspace_preference_matrix[p] == self.kappa)
 
     def _preference_weighted_similarity_measure(self, p, q):
         """
-        Computes a distance between data-points p and q based on p's subspace preference vector (see Definition 3 of the PreDeCon_Paper.pdf).
+        Computes a distance between data-points self.X[p] and self.X[q] based on self.X[p]'s subspace preference vector (see Definition 3 of the PreDeCon_Paper.pdf).
 
-        p : numpy.ndarray
-
-        q : numpy.ndarray
+        args:
+            p : int
+            q : int
         """
-        return np.sqrt(np.sum(self._subspace_preference_vector(p) * (p - q)**2))
+        return np.sqrt(np.sum(self._subspace_preference_matrix[p] * (self.X[p]-self.X[q])**2))
 
     def _general_preference_weighted_similarity_measure(self, p, q):
         """
-        Determines the maximum distance between data-points p and q (see Definition 4 of the PreDeCon_Paper.pdf).
+        Determines the maximum distance between data-points self.X[p] and self.X[q] (see Definition 4 of the PreDeCon_Paper.pdf).
 
         args:
-            p : numpy.ndarray
-            q : numpy.ndarray
+            p : int
+            q : int
         """
         dist = self._preference_weighted_similarity_measure
         return np.maximum(dist(p,q), dist(q,p))
 
     def _eps_neighborhood(self, p):
         """
-        Computes the epsilon neighborhood of a data-point p based on this objects eps-value.
+        Computes an index list for the epsilon neighborhood of a data-point self.X[p] based on this objects eps-value where every entry corresponds to another data-point (i.e. a row in self.X).
+
+        e.g. for a returned list [1,2,5], the epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
 
         args:
-            p : numpy.ndarray
+            p : int
         """
-        return np.array([q for q in self.X if np.linalg.norm(p-q) <= self.eps])
+        return np.array([np.where(self.X == q)[0][0] for q in self.X if np.linalg.norm(self.X[p]-q) <= self.eps])
 
     def _preference_weighted_eps_neighborhood(self, o):
         """
-        Computes the preference weighted epsilon neighborhood of a data-point o based on this objects eps-value and the general preference weighted similarity measure (see Definition 5 of the PreDeCon_Paper.pdf).
+        Computes an index list for the preference weighted epsilon neighborhood of a data-point self.X[o] based on this objects eps-value and the general preference weighted similarity measure (see Definition 5 of the PreDeCon_Paper.pdf) where every entry corresponds to another data-point (i.e. a row in self.X).
+
+        e.g. for a returned list [1,2,5], the prefernce weighted epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
 
         args:
-            o : numpy.ndarray
+            o : int
         """
         dist_pref = self._general_preference_weighted_similarity_measure
-        return np.array([x for x in self.X if dist_pref(o,x) <= self.eps])
+        return np.array([x for x in range(self.num_points) if dist_pref(o,x) <= self.eps])
 
     def _is_core_point(self, p):
         """
-        Checks if a data-point p is a preference weighted core point (see Definition 6 of the PreDeCon_Paper.pdf).
+        Checks if a data-point self.X[p] is a preference weighted core point (see Definition 6 of the PreDeCon_Paper.pdf).
 
         args:
-            p : numpy.ndarray
+            p : int
         """
         pdim = self._subspace_preference_dimensionality(p)
-        N_w = self._pref_neighborhood_of_point(p)
+        N_w = self._pref_weighted_neighborhoods[p]
         return pdim <= self.lambda_ and len(N_w) >= self.minPts
 
     def _is_directly_preference_weighted_reachable(self, q, p):
         """
-        Checks if a data-point p is directly preference weighted reachable from a data-point q (see Definition 7 of the PreDeCon_Paper.pdf).
+        Checks if a data-point self.X[p] is directly preference weighted reachable from a data-point self.X[q] (see Definition 7 of the PreDeCon_Paper.pdf).
 
         args:
-            q : numpy.ndarray
-            p : numpy.ndarray
+            q : int
+            p : int
         """
-        if (self._pref_neighborhood_of_point(q) == p).any():
-            # if the point is in the neighborhood (condition 3), check if condition 1 and 2 are fulfilled
-            return self._is_core_point(q) and self._subspace_preference_dimensionality(p) <= self.lambda_
-
-        # the point cannot be directly reachable since condition 3 was not fulfilled, therefore return False
-        return False
-
-    def _is_noise_point(self, p):
-        """
-        Checks if a data-point p of is a noise point.
-
-        args:
-            p : numpy.ndarray
-
-        raises:
-            KeyError : if p is not a data point of the fitted data-points X
-        """
-        return self._cluster_of_points[p.tobytes()] == self._NOISE
+        # this order of condition checking was the fastest
+        return p in self._pref_weighted_neighborhoods[q] \
+                and self._is_core_point(q) \
+                and self._subspace_preference_dimensionality(p) <= self.lambda_
