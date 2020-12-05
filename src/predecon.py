@@ -62,6 +62,7 @@ class PreDeCon():
         '''
         Computes the epsilon neighborhood for all data-points p in self.X
         '''
+
         neighborhoods = {}
         for p in range(self.num_points):
             # Computes an index list for the epsilon neighborhood of a data-point self.X[p] based on this objects eps-value
@@ -76,6 +77,7 @@ class PreDeCon():
         '''
         Computes the preference weighted epsilon neighborhood for all data-points p in self.X
         '''
+
         pref_weighted_neighborhoods = {}
         for p in range(self.num_points):
             # Computes an index list for the preference weighted epsilon neighborhood of a data-point self.X[o] based on this objects eps-value
@@ -90,7 +92,9 @@ class PreDeCon():
     def _compute_subspace_preference_matrix(self):
         """
         Constructs the subspace preference matrix where row i corresponds to the subspace preference
-        vector of data-point self.X[i] (see Definition 3 of the PreDeCon_Paper.pdf).
+        vector of data-point self.X[i] (see Definition 3 of the PreDeCon_Paper.pdf) and a vector of subspace preference
+        dimensionalities where entry i is the subspace preference dimensionality of self.X[i] (i.e. the number of penalized row-elements
+        in the subspace preference matrix, see Definition 2 of the PreDeCon_Paper.pdf).
         """
 
         # variances where the values in row i correspond to the variances of the attributes 0,...,j
@@ -115,6 +119,7 @@ class PreDeCon():
         e.g. if the maximum distance between self.X[p] and self.X[q] is 7, then
         self._similarity[p,q] == self._similarity[q,p] == 7
         """
+
         similarity = np.zeros((self.num_points, self.num_points))
         for p in range(self.num_points):
             w = self._subspace_preference_matrix[p]
@@ -125,11 +130,9 @@ class PreDeCon():
     @timed('_performance', 'ccp')
     def _compute_core_points(self):
         """
-        Computes if a data-point self.X[p] is a preference weighted core point (see Definition 6 of the PreDeCon_Paper.pdf).
-
-        args:
-            p : int
+        Computes the preference weighted core points of self.X (see Definition 6 of the PreDeCon_Paper.pdf).
         """
+
         pdim = self._subspace_preference_dimensionality
         num_N_w = np.array([len(self._pref_weighted_neighborhoods[x]) for x in range(self.num_points)])
         self._core_points = np.logical_and(pdim <= self.lambda_, num_N_w >= self.minPts)
@@ -137,11 +140,10 @@ class PreDeCon():
     @timed('_performance', 'cr')
     def _compute_reachability(self):
         """
-        Computes all data-points p that are directly preference weighted reachable from a data-point q (see Definition 7 of the PreDeCon_Paper.pdf).
-
-        args:
-            q : int
+        Computes all directly preference weighted reachable data-points for every data-point in self.X
+        (see Definition 7 of the PreDeCon_Paper.pdf).
         """
+
         reachable = {}
         for q in range(self.num_points):
             cond1 = self._core_points[q]
@@ -157,6 +159,7 @@ class PreDeCon():
         '''
         Computes the clustering for self.X, see Figure 4 of the PreDeCon_Paper.pdf for the Pseudocode.
         '''
+
         clusters = {}
         clusterID = 0
 
@@ -194,6 +197,7 @@ class PreDeCon():
     
     def performance(self):
         """Returns performance statistics for selected instance methods."""
+
         perf = ""
         for key, value in self._performance.items():
             perf += f"{value / 1000_000_000:>8.4f}s {key}\n"
