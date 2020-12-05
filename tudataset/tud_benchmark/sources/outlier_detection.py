@@ -9,7 +9,6 @@ import collections
 
 
 def local_outlier_factor(data):
-    print('test')
     clf = LocalOutlierFactor(n_neighbors=2)
     labels = clf.fit_predict(data)
     return labels
@@ -133,3 +132,9 @@ def removeData(dataset, outliers):
             testDataOnlyOuliers[i] = None
     return testDataOnlyOuliers
 
+def deleteOutliers(dataset, outliers):
+    dataWithoutOuliers = np.array([])
+    for index in range(0, len(dataset)):
+        if outliers[index] == 0:
+            dataWithoutOuliers = np.append(dataWithoutOuliers, dataset[index])
+    return dataWithoutOuliers

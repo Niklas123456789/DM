@@ -50,6 +50,7 @@ def visualize(G, color=None, figsize=(5,5)):
                      cmap="Set2")
     plt.show();
 
+
 def showEntireDataset(wl_listG, wl_listV, tsvd_graphlet_vectors, kpca_graphlet_gram, tsvd_shortestpath_vectors, kpca_shortestpath_gram, classes):
     for i in range(1, 8):
         if (i == 6):
@@ -84,3 +85,26 @@ def showEntireDataset(wl_listG, wl_listV, tsvd_graphlet_vectors, kpca_graphlet_g
         print("________________________________________________________________________________________")
         print()
 
+def two3DPlots(data, extraData, classes, title):
+    fig = plt.figure(figsize=(15, 15))
+    fig.suptitle(title, fontsize=25)
+
+    ax0 = fig.add_subplot(221)
+    ax1 = fig.add_subplot(222)
+    ax2 = fig.add_subplot(223, projection='3d')
+    ax3 = fig.add_subplot(224, projection='3d')
+
+    colormap = np.array(["g", "b"])
+    ax0.scatter(data[:, 0], data[:, 1], c=colormap[classes])
+    ax1.scatter(data[:, 0], extraData, c=colormap[classes])
+
+    ax0.title.set_text('2D Normal')
+    ax1.title.set_text('2D With extra column')
+    ax2.title.set_text('3D Normal')
+    ax3.title.set_text('3D With extra column')
+
+
+    ax2.scatter3D(data[:,0], data[:,1], data[:,2], c=colormap[classes])
+    ax3.scatter3D(data[:,0], data[:,1], extraData, c=colormap[classes])
+
+    plt.show()

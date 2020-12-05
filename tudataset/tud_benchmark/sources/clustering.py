@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 def kMeans_scree_plot(dataset):
-    dataset = dataset[:,0:10]
+    dataset = np.delete(dataset, range(11, 99), 1)
     costs = []
     kmeans_runs = []
-    k_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,12,13,14,15, 20, 25, 30, 35, 40]
+    k_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 25, 30, 35, 40]
     for k in k_list:
         kmeans = KMeans(n_clusters=k)
         kmeans.fit(dataset)
@@ -47,3 +47,6 @@ def showPairPlot(dataset,labels,title):
     g = sns.pairplot(df,hue="Cluster",diag_kind='hist',palette='Accent')
     g.fig.suptitle(title)
     plt.show()
+
+def showNMIs(a,b,c):
+    print("The NMI between ")
