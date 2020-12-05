@@ -106,7 +106,7 @@ class PreDeCon():
         vars = np.zeros(self.X.shape)
         for i in range(self.num_points):
             # https://numpy.org/doc/stable/user/theory.broadcasting.html#example-3
-            vars[i] = np.sum(np.abs(self.X[self._neighborhoods[i]] - self.X[i]),axis=0) / len(self.X[self._neighborhoods[i]])
+            vars[i] = np.sum((self.X[self._neighborhoods[i]] - self.X[i])**2,axis=0) / len(self.X[self._neighborhoods[i]])
         return vars
 
     @timed('_performance', 'spm')
