@@ -1,5 +1,10 @@
 # DM Group Assignment
 
+#Exploratory Data Analysis:
+
+The corresponding source files for the EDA can be found  in tudataset/tudbenchmark/sources folder. The jupyter notebook using these source files is on the same level  tudataset/tudbenchmark/sources  and titled “EDA.ipynb”. This notebook also exists in html format called “EDA.html”.
+
+
 ## Usage 
 
 ### Conda
