@@ -5,8 +5,10 @@ import networkx as nx
 import numpy as np
 
 
-
 def scatterPlot2DBig(data, title, classes):
+    """
+    This function visualizes a 2D dataset with a title and labels
+    """
     fig = plt.figure(figsize=(15, 15))
     colormap = np.array(["g", "b"])
 
@@ -14,20 +16,28 @@ def scatterPlot2DBig(data, title, classes):
         plt.scatter(data[:, 0], data[:, 1], c=colormap[classes])
     else:
         plt.scatter(data[:, 0], data[:, 1])
-    plt.title(title,fontsize=18)
+    plt.title(title, fontsize=18)
     plt.show()
 
+
 def scatterPlot2DMiddle(data, title, classes):
-    fig = plt.figure(figsize=(8,8))
+    """
+    This function visualizes a 2D dataset with a title and labels
+    """
+    fig = plt.figure(figsize=(8, 8))
     colormap = np.array(["g", "b"])
     if classes is not None:
         plt.scatter(data[:, 0], data[:, 1], c=colormap[classes], s=0.2)
     else:
         plt.scatter(data[:, 0], data[:, 1], s=1)
-    plt.title(title,fontsize=18)
+    plt.title(title, fontsize=18)
     plt.show()
 
+
 def showBoxplot(data, title):
+    """
+    This function visualizes a 2D dataset as a boxplot with a title
+    """
     sns.set_theme(style="whitegrid")
     df = pd.DataFrame(data=data[:, 0:2], columns=(0, 1))
     df = df.rename(columns={0: 'First principal component', 1: 'Second principal component'})
@@ -39,7 +49,11 @@ def showBoxplot(data, title):
     ax2 = sns.boxplot(y=df['Second principal component'])
     plt.show()
 
-def visualize(G, color=None, figsize=(5,5)):
+
+def visualize(G, color=None, figsize=(5, 5)):
+    """
+    This function visualizes singe a graph or ego-network
+    """
     plt.figure(figsize=figsize)
     plt.xticks([])
     plt.yticks([])
@@ -51,7 +65,11 @@ def visualize(G, color=None, figsize=(5,5)):
     plt.show();
 
 
-def showEntireDataset(wl_listG, wl_listV, tsvd_graphlet_vectors, kpca_graphlet_gram, tsvd_shortestpath_vectors, kpca_shortestpath_gram, classes):
+def showEntireDataset(wl_listG, wl_listV, tsvd_graphlet_vectors, kpca_graphlet_gram, tsvd_shortestpath_vectors,
+                      kpca_shortestpath_gram, classes):
+    """
+    This function visualizes a sequence of datasets with several plots(two 2D plots and two 3D plots)
+    """
     for i in range(1, 8):
         if (i == 6):
             data_tsvd = tsvd_graphlet_vectors
@@ -85,7 +103,12 @@ def showEntireDataset(wl_listG, wl_listV, tsvd_graphlet_vectors, kpca_graphlet_g
         print("________________________________________________________________________________________")
         print()
 
-def two3DPlots(data, extraData, classes, title):
+
+def plotWithExtraColumn(data, extraData, classes, title):
+    """
+    This function visualizes a sequence of datasets with several plots(two 2D plots and two 3D plots)
+    Two of these plots are with an extra column instead of the normal data column
+    """
     fig = plt.figure(figsize=(15, 15))
     fig.suptitle(title, fontsize=25)
 
@@ -103,8 +126,7 @@ def two3DPlots(data, extraData, classes, title):
     ax2.title.set_text('3D Normal')
     ax3.title.set_text('3D With extra column')
 
-
-    ax2.scatter3D(data[:,0], data[:,1], data[:,2], c=colormap[classes])
-    ax3.scatter3D(data[:,0], data[:,1], extraData, c=colormap[classes])
+    ax2.scatter3D(data[:, 0], data[:, 1], data[:, 2], c=colormap[classes])
+    ax3.scatter3D(data[:, 0], data[:, 1], extraData, c=colormap[classes])
 
     plt.show()
