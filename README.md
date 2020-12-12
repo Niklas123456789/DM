@@ -2,22 +2,23 @@
 
 ## Algorithm
 
-`src/predecon.py`
+`predecon.py`
 
 ## Algorithm Testing
 
-`src/Algorithm_Testing.ipynb`
+`task1/Algorithm_Testing.ipynb`
 
 ## Applying PreDeCon to IMDB-BINARY
 
-`src/IMDb_Tests.ipynb`
+`task1/IMDb_Tests.ipynb`
 
-## Exploratory Data Analysis:
+## Exploratory Data Analysis
 
-The corresponding source files for the EDA can be found  in tudataset/tudbenchmark/sources folder. The jupyter notebook using these source files is on the same level  tudataset/tudbenchmark/sources  and titled “EDA.ipynb”. This notebook also exists in html format called “EDA.html”.
+`task1/EDA.ipynb`
 
+## Additional code
 
-## Usage 
+`util`
 
 ### Conda
 
@@ -98,7 +99,7 @@ Add torch-geometric (cpu, torch.version=1.6.0) by
     pip install torch-spline-conv==latest+cpu -f https://pytorch-geometric.com/whl/torch-1.6.0.html
     pip install torch-geometric
 
-## Troubleshooting
+### Troubleshooting
 
 _MS Python extension for VSCode/Codium is not able to start the conda environment when executing the notebook._
 Instead start notebook server as usual and tell Codium to use this server.
