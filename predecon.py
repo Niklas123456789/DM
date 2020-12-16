@@ -1,6 +1,6 @@
 import numpy as np
 from util.timing import timed
-from collections import defaultdict
+from collections import defaultdict, deque
 from queue import Queue
 
 class PreDeCon():
@@ -59,34 +59,34 @@ class PreDeCon():
 
     @timed('_performance', 'cn')
     def _compute_neighborhoods(self):
-        '''
+        """
         Computes the epsilon neighborhood for all data-points p in self.X
-        '''
+        """
 
-        neighborhoods = {}
+        self._neighborhoods = {}
         for p in range(self.num_points):
             # Computes an index list for the epsilon neighborhood of a data-point self.X[p] based on this objects eps-value
             # where every entry corresponds to another data-point (i.e. a row in self.X).
-            # e.g. for a returned list [1,2,5], the epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
-            N = np.flatnonzero(np.linalg.norm(self.X - self.X[p], axis=1) <= self.eps)
-            neighborhoods[p] = N
-        self._neighborhoods = neighborhoods
+
+            # e.g. if for a data-point p the entry self._neighborhoods[p] is [1,2,5],
+            # the epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
+            self._neighborhoods[p] = np.flatnonzero(np.linalg.norm(self.X - self.X[p], axis=1) <= self.eps)
     
     @timed('_performance', 'cwn')
     def _compute_weighted_neighborhoods(self):
-        '''
+        """
         Computes the preference weighted epsilon neighborhood for all data-points p in self.X
-        '''
+        """
 
-        pref_weighted_neighborhoods = {}
+        self._pref_weighted_neighborhoods = {}
         for p in range(self.num_points):
             # Computes an index list for the preference weighted epsilon neighborhood of a data-point self.X[o] based on this objects eps-value
             # and the general preference weighted similarity measure (see Definition 5 of the PreDeCon_Paper.pdf)
             # where every entry corresponds to another data-point (i.e. a row in self.X).
-            # e.g. for a returned list [1,2,5], the prefernce weighted epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
-            N_w = np.flatnonzero(self._similarity[p, :] <= self.eps)
-            pref_weighted_neighborhoods[p] = N_w
-        self._pref_weighted_neighborhoods = pref_weighted_neighborhoods
+
+            # e.g. if for a data-point p the entry self._pref_weighted_neighborhoods[p] is [1,2,5],
+            # the prefernce weighted epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
+            self._pref_weighted_neighborhoods[p] = np.flatnonzero(self._similarity[p, :] <= self.eps)
     
     @timed('_performance', 'cspm')
     def _compute_subspace_preference_matrix(self):
@@ -156,9 +156,9 @@ class PreDeCon():
     
     @timed('_performance', 'cc')
     def _compute_clusters(self):
-        '''
+        """
         Computes the clustering for self.X, see Figure 4 of the PreDeCon_Paper.pdf for the Pseudocode.
-        '''
+        """
 
         clusters = {}
         clusterID = 0
