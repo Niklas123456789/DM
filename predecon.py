@@ -1,7 +1,6 @@
 import numpy as np
 from util.timing import timed
 from collections import defaultdict, deque
-from queue import Queue
 
 class PreDeCon():
     def __init__(self, minPts=3, eps=1.0, delta = 0.25, lambda_ = 1, kappa = 100):
@@ -52,10 +51,6 @@ class PreDeCon():
         self._compute_core_points()
         self._compute_reachability()
         self._compute_clusters()
-        
-        self.labels = []
-        for i in range(self.num_points):
-            self.labels.append(self._cluster_of_points[i])
 
     @timed('_performance', 'cn')
     def _compute_neighborhoods(self):
@@ -70,7 +65,8 @@ class PreDeCon():
 
             # e.g. if for a data-point p the entry self._neighborhoods[p] is [1,2,5],
             # the epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
-            self._neighborhoods[p] = np.flatnonzero(np.linalg.norm(self.X - self.X[p], axis=1) <= self.eps)
+            neighbors_p = np.flatnonzero(np.linalg.norm(self.X - self.X[p], axis=1, ord=2) <= self.eps)
+            self._neighborhoods[p] = neighbors_p # [neighbors_p != p] # remove point from its own neighborhood
     
     @timed('_performance', 'cwn')
     def _compute_weighted_neighborhoods(self):
@@ -86,7 +82,8 @@ class PreDeCon():
 
             # e.g. if for a data-point p the entry self._pref_weighted_neighborhoods[p] is [1,2,5],
             # the prefernce weighted epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
-            self._pref_weighted_neighborhoods[p] = np.flatnonzero(self._similarity[p, :] <= self.eps)
+            neighbors_p = np.flatnonzero(self._similarity[p] <= self.eps)
+            self._pref_weighted_neighborhoods[p] = neighbors_p # [neighbors_p != p] # remove point from its own neighborhood
     
     @timed('_performance', 'cspm')
     def _compute_subspace_preference_matrix(self):
@@ -99,12 +96,17 @@ class PreDeCon():
 
         # variances where the values in row i correspond to the variances of the attributes 0,...,j
         # of data-point self.X[i] (see Definition 1 of the PreDeCon_Paper.pdf).
-        variance_matrix = np.zeros(self.X.shape)
+
+        # Initially assume a large variance.
+        variance_matrix = np.full(self.X.shape, fill_value=np.inf)
+
         for i in range(self.num_points):
             # https://numpy.org/doc/stable/user/theory.broadcasting.html#example-3
-            variance_matrix[i] = np.sum((self.X[self._neighborhoods[i]] - self.X[i])**2,axis=0) / len(self.X[self._neighborhoods[i]])
+            if len(self._neighborhoods[i]) > 0:
+                variance_matrix[i] = np.sum((self.X[self._neighborhoods[i]] - self.X[i])**2,axis=0) / len(self._neighborhoods[i])
         
         self._subspace_preference_matrix = np.ones(self.X.shape)
+
         # where the variance is smaller or equal to delta, set the preference to kappa
         # https://numpy.org/doc/stable/user/basics.indexing.html?highlight=slicing#boolean-or-mask-index-arrays
         self._subspace_preference_matrix[variance_matrix <= self.delta] = self.kappa
@@ -148,7 +150,7 @@ class PreDeCon():
         for q in range(self.num_points):
             cond1 = self._core_points[q]
             cond2 = self._subspace_preference_dimensionality <= self.lambda_
-            cond3 = np.zeros((self.num_points,), dtype=bool)
+            cond3 = np.full((self.num_points,), False)
             cond3[self._pref_weighted_neighborhoods[q]] = True
 
             reachable[q] = np.flatnonzero(np.logical_and(cond1, np.logical_and(cond2, cond3)))
@@ -160,40 +162,35 @@ class PreDeCon():
         Computes the clustering for self.X, see Figure 4 of the PreDeCon_Paper.pdf for the Pseudocode.
         """
 
-        clusters = {}
+        # set all labels to noise by default
+        clusters = [self._NOISE] * self.num_points
         clusterID = 0
 
         for i in range(self.num_points):
-            if self._core_points[i]:
-                # ensures IDs that only increase by 1
-                try:
-                    clusters[i]
-                except KeyError:
-                    clusterID += 1
+            # only start a cluster if the current point is a core point which
+            # is not yet assigned to a cluster
+            if self._core_points[i] and clusters[i] == self._NOISE:
+                clusterID += 1
 
-                queue = Queue()
-
-                for n in self._pref_weighted_neighborhoods[i]:
-                    queue.put(n)
-
-                while not queue.empty():
-                    q = queue.get()
+                connected = set(self._pref_weighted_neighborhoods[i])
+                
+                while connected:
+                    q = connected.pop()
                     R = self._directly_reachable_points[q]
 
+                    # keep only unclassified points
+                    R = [x for x in R if clusters[x] == self._NOISE]
+
                     for x in R:
-                        try:
-                            if clusters[x] == self._NOISE:
-                                clusters[x] = clusterID
+                        clusters[x] = clusterID
 
-                        # if a KeyError occured, x was unclassified
-                        except KeyError:
-                            clusters[x] = clusterID
-                            queue.put(x)
+                        # only core points may connect the current point (i.e. point i) with
+                        # points outside of i's epsilon-neighborhood (and therefore add these 
+                        # points to the cluster)
+                        if self._core_points[x]:
+                            connected.add(x)
 
-            else: # point is noise
-                clusters[i] = self._NOISE
-        
-        self._cluster_of_points = clusters
+        self.labels = clusters
     
     def performance(self):
         """Returns performance statistics for selected instance methods."""
@@ -202,3 +199,33 @@ class PreDeCon():
         for key, value in self._performance.items():
             perf += f"{value / 1000_000_000:>8.4f}s {key}\n"
         return perf
+
+if __name__ == "__main__":
+    mouse = True
+    predecon = None
+
+    if mouse:
+        dname = 'mouse'
+        predecon = PreDeCon(minPts=25, eps=0.725, delta=0.3, lambda_=2, kappa=100)
+        
+    else:
+        dname = 'multiple-gaussian-2d'
+        predecon = PreDeCon(minPts=8, eps=1, delta=0.5, lambda_=2, kappa=100)
+
+    dataset = f'D:\Michael\Studium\HU\Informatik\Git\DM\data\{dname}\{dname}.csv'
+    X = np.loadtxt(dataset, delimiter =' ')
+    labs = 2
+    X, lab = X[:,:labs], X[:,labs]
+    predecon.fit(X)
+
+    from matplotlib import pyplot as plt
+
+    # fig = plt.figure()
+    # ax = fig.add_axes([0,0,1,1])
+    # ax.scatter(x=X[:,0],y=X[:,1],c=lab)
+    # plt.show()
+    
+    fig = plt.figure()
+    ax = fig.add_axes([0,0,1,1])
+    ax.scatter(x=X[:,0],y=X[:,1],c=predecon.labels)
+    plt.show()
