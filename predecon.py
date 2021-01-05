@@ -1,6 +1,6 @@
 import numpy as np
 from util.timing import timed
-from collections import defaultdict, deque
+from collections import defaultdict
 
 class PreDeCon():
     def __init__(self, minPts=3, eps=1.0, delta = 0.25, lambda_ = 1, kappa = 100):
@@ -212,7 +212,7 @@ if __name__ == "__main__":
         dname = 'multiple-gaussian-2d'
         predecon = PreDeCon(minPts=8, eps=1, delta=0.5, lambda_=2, kappa=100)
 
-    dataset = f'D:\Michael\Studium\HU\Informatik\Git\DM\data\{dname}\{dname}.csv'
+    dataset = f'.\data\{dname}\{dname}.csv'
     X = np.loadtxt(dataset, delimiter =' ')
     labs = 2
     X, lab = X[:,:labs], X[:,labs]
