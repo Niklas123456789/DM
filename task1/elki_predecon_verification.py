@@ -77,6 +77,9 @@ def elki_predecon(data_file_name, X, minPts=3, eps=1.0, delta = 0.25, lambda_ = 
     return Y_pred[:, 1]
 
 def nmi_comparison(dataset, elki_labels, own_labels, true_labels, save_in_txtfile=False):
+    '''
+    Compares the elki labels with the labels of our own implementation.
+    '''
     elki_nmi = NMI(elki_labels,true_labels)
     own_nmi  = NMI(own_labels,true_labels)
 
