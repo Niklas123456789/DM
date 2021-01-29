@@ -6,23 +6,7 @@
 
 ## Reports
 
-### `task1`
-
-#### Algorithm Testing
-
-`report_part1_algorithm_testing.html` produced from `task1/Algorithm_Testing.ipynb`
-
-#### Applying PreDeCon to IMDB-BINARY
-
-`report_part3_predecon_on_imdb.html` produced from `task1/IMDb_Tests.ipynb`
-
-#### Exploratory Data Analysis
-
-`report_part2_eda.html` produced from `tudataset/tud_benchmark/EDA.ipynb`
-
-### `task2`
-
-`own_kernels.html` produced from `tudataset/tud_benchmark/graph_property_prediction.ipynb`
+`reports`
 
 ### 
 
