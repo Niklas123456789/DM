@@ -65,8 +65,7 @@ class PreDeCon():
 
             # e.g. if for a data-point p the entry self._neighborhoods[p] is [1,2,5],
             # the epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
-            neighbors_p = np.flatnonzero(np.linalg.norm(self.X - self.X[p], axis=1, ord=2) <= self.eps)
-            self._neighborhoods[p] = neighbors_p # [neighbors_p != p] # remove point from its own neighborhood
+            self._neighborhoods[p] = np.flatnonzero(np.linalg.norm(self.X - self.X[p], axis=1, ord=2) <= self.eps)
     
     @timed('_performance', 'cwn')
     def _compute_weighted_neighborhoods(self):
@@ -82,8 +81,7 @@ class PreDeCon():
 
             # e.g. if for a data-point p the entry self._pref_weighted_neighborhoods[p] is [1,2,5],
             # the prefernce weighted epsilon neighborhood consists of self.X[1], self.X[2], self.X[5]
-            neighbors_p = np.flatnonzero(self._similarity[p] <= self.eps)
-            self._pref_weighted_neighborhoods[p] = neighbors_p # [neighbors_p != p] # remove point from its own neighborhood
+            self._pref_weighted_neighborhoods[p] = np.flatnonzero(self._similarity[p] <= self.eps)
     
     @timed('_performance', 'cspm')
     def _compute_subspace_preference_matrix(self):
@@ -199,33 +197,3 @@ class PreDeCon():
         for key, value in self._performance.items():
             perf += f"{value / 1000_000_000:>8.4f}s {key}\n"
         return perf
-
-if __name__ == "__main__":
-    mouse = True
-    predecon = None
-
-    if mouse:
-        dname = 'mouse'
-        predecon = PreDeCon(minPts=25, eps=0.725, delta=0.3, lambda_=2, kappa=100)
-        
-    else:
-        dname = 'multiple-gaussian-2d'
-        predecon = PreDeCon(minPts=8, eps=1, delta=0.5, lambda_=2, kappa=100)
-
-    dataset = f'.\data\{dname}\{dname}.csv'
-    X = np.loadtxt(dataset, delimiter =' ')
-    labs = 2
-    X, lab = X[:,:labs], X[:,labs]
-    predecon.fit(X)
-
-    from matplotlib import pyplot as plt
-
-    # fig = plt.figure()
-    # ax = fig.add_axes([0,0,1,1])
-    # ax.scatter(x=X[:,0],y=X[:,1],c=lab)
-    # plt.show()
-    
-    fig = plt.figure()
-    ax = fig.add_axes([0,0,1,1])
-    ax.scatter(x=X[:,0],y=X[:,1],c=predecon.labels)
-    plt.show()
