@@ -1,14 +1,20 @@
 # DM Group Assignment
 
-## Algorithm
+## Using the Algorithm
 
-`predecon.py`
+Import `predecon.py` and create a PreDeCon object with the desired parameters. Call the `fit()` method with the dataset as parameter. The predicted labels can be accessed through the `labels` attribute of the PreDeCon object.
 
 ## Reports
 
 `reports`
 
-### 
+You can run the notebooks used for creating the report-files.
+
+- `task1/Algorithm_Testing.ipynb`
+- `task1/IMDb_Tests.ipynb`
+- `tudataset/tud_benchmark/EDA.ipynb`
+- `task2/classification_experiments.ipynb`
+- `tudataset/tud_benchmark/graph_property_prediction.ipynb`
 
 ## Additional code
 
@@ -30,43 +36,9 @@ _for better cross platform compatibility install dependencies from history only_
 
     conda env create --file environment_history.yml --prefix .conda_env
 
-__Update env from environment file__
-
-    conda env update --prefix .conda_env --file environment_history.yml --prune
-
 __Activate env__
 
-    conda activate .conda_env
-
-__Deactivate env__
-
-    conda deactivate
-
-__Search package__
-
-    conda search {package_name}
-
-__Install package__
-
-    conda install {package_name} --prefix .conda_env
-
-__Remove conda package__
-
-    conda remove {package_name} --prefix .conda_env
-
-__Update env packages__
-
-    conda env update --prefix .conda_env --prune
-
-__Create/Update environment file__
-
-    conda env export --prefix .conda_env > environment.yml
-
-For better cross platform compatibility backup history only:
-
-    conda env export --prefix .conda_env --from-history > environment_history.yml
-
-__Note:__ If inside the environment `--prefix .conda_env` can be omitted.
+    conda activate ./.conda_env
 
 ### Jupyter Notebook
 
@@ -76,7 +48,7 @@ __Start Notebook Server__
 
 __Set virtualenv as ipython kernel__
 
-	conda activate .conda_env
+	conda activate ./.conda_env
 	ipython kernel install --user --name=uni.dm.ga
 	jupyter notebook
 	
