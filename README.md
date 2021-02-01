@@ -1,5 +1,10 @@
 # DM Group Assignment
 
+## Videos
+
+- Task 1: https://ucloud.univie.ac.at/index.php/s/lPyG1vT42CeVxdQ
+- Task 2: https://ucloud.univie.ac.at/index.php/s/k8YWkXocp2aISVo
+
 ## Using the Algorithm
 
 Import `predecon.py` and create a PreDeCon object with the desired parameters. Call the `fit()` method with the dataset as parameter. The predicted labels can be accessed through the `labels` attribute of the PreDeCon object.
